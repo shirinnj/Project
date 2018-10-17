@@ -13,6 +13,9 @@ LSTM model to predict taxi ridership demand
 '''
 # convert an array of values into a dataset matrix
 def create_dataset(DATASET, LOOK_BACK=1, LOOK_FORWARD=5):
+    '''
+    Function to create data
+    '''
     DATA_X, DATA_Y = [], []
     for i in range(len(DATASET)- LOOK_BACK- 1):
         NEW = DATASET[i:(i+ LOOK_BACK), 0]
@@ -21,35 +24,40 @@ def create_dataset(DATASET, LOOK_BACK=1, LOOK_FORWARD=5):
     return numpy.array(DATA_X), numpy.array(DATA_Y)
 
 def create_dataFrame(X, Y, PREDICT):
+    '''
+    Function to create dataframe
+    '''
     NEW = pd.concat([pd.DataFrame(PREDICT, columns=["Predict"]), pd.DataFrame(Y, columns=["Y"])], axis=1)
     NEW = NEW[["Y", "Predict"]]
     return NEW
 
-def create_final_output(INPUT_FOLDER, FILE_NAME, TRAIN_X, TRAIN_Y, 
-                                       TRAIN_PREDICT, TEST_X, TEST_Y, TEST_PREDICT):
+def create_final_output(INPUT_FOLDER, FILE_NAME, TRAIN_X, TRAIN_Y, TRAIN_PREDICT, TEST_X, TEST_Y, TEST_PREDICT):
+    '''
+    Function to create final output
+    '''
     RES = create_dataFrame(TEST_X, TEST_Y, TEST_PREDICT)
     RES_NEW = pd.DataFrame([scaler.inverse_transform(RES[k]) for k in RES.columns]).T
     RES_NEW.columns = RES.columns
     RES.columns = [k + "_normalized" for k in RES.columns]
     TEST_FINAL = pd.concat([RES, RES_NEW], axis=1)
     TEST_FINAL.to_csv(INPUT_FOLDER + FILE_NAME+ "_test_result_final.csv", index=None)
-
     RES_TRAIN = create_dataFrame(TRAIN_X, TRAIN_Y, TRAIN_PREDICT)
-    RES_TRAIN_NEW = pd.DataFrame([scaler.inverse_transform(RES_TRAIN[k]) 
-                                  for k in RES_TRAIN.columns]).T
+    RES_TRAIN_NEW = pd.DataFrame([scaler.inverse_transform(RES_TRAIN[k]) for k in RES_TRAIN.columns]).T
     RES_TRAIN_NEW.columns = RES_TRAIN.columns
     RES_TRAIN.columns = [k + "_normalized" for k in RES_TRAIN.columns]
     TRAIN_FINAL = pd.concat([RES_TRAIN, RES_TRAIN_NEW], axis=1)
-    TRAIN_FINAL.to_csv(INPUT_FOLDER + FILE_NAME+"_train_result_final.csv", index=None)
+    TRAIN_FINAL.to_csv(INPUT_FOLDER + FILE_NAME + "_train_result_final.csv", index=None)
     return TRAIN_FINAL, TEST_FINAL
 
 if __name__ == "__main__":
+    
     INPUT_FOLDER = "../data/entire data/LSTM/"
     FILE_NAME = "pc3_2016_1_3_total"
     # fix random seed for reproducibility
     numpy.random.seed(7)
     # load the dataset
-    DATAFRAME = pd.read_csv(INPUT_FOLDER + FILE_NAME + ".csv", usecols=[1], engine='python', skipfooter=3)
+    DATAFRAME = pd.read_csv(INPUT_FOLDER + FILE_NAME + ".csv", usecols=[1], 
+                            engine='python', skipfooter=3)
     DATASET = DATAFRAME.values
     DATASET = DATASET.astype('float32')
     # normalize the dataset
@@ -72,7 +80,7 @@ if __name__ == "__main__":
     MODEL = Sequential()
     MODEL.add(LSTM(4, input_shape=(1, LOOK_BACK)))
     MODEL.add(Dense(1))
-    MODEL.compile(loss = 'mean_squared_error', optimizer = 'adam')
+    MODEL.compile(loss='mean_squared_error', optimizer='adam')
     MODEL.fit(TRAIN_X, TRAIN_Y, epochs=4, batch_size=1, verbose=2)
     # make predictions
     TRAIN_PREDICT = MODEL.predict(TRAIN_X)
