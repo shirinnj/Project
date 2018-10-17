@@ -21,8 +21,7 @@ def create_dataset(DATASET, LOOK_BACK=1, LOOK_FORWARD=5):
     return numpy.array(DATA_X), numpy.array(DATA_Y)
 
 def create_dataFrame(X, Y, PREDICT):
-    NEW = pd.concat([pd.DataFrame(PREDICT, columns=["Predict"]), pd.DataFrame(Y, 
-                                                                              columns=["Y"])], axis=1)
+    NEW = pd.concat([pd.DataFrame(PREDICT, columns=["Predict"]), pd.DataFrame(Y, columns=["Y"])], axis=1)
     NEW = NEW[["Y", "Predict"]]
     return NEW
 
@@ -45,14 +44,12 @@ def create_final_output(INPUT_FOLDER, FILE_NAME, TRAIN_X, TRAIN_Y,
     return TRAIN_FINAL, TEST_FINAL
 
 if __name__ == "__main__":
-    
     INPUT_FOLDER = "../data/entire data/LSTM/"
     FILE_NAME = "pc3_2016_1_3_total"
     # fix random seed for reproducibility
     numpy.random.seed(7)
     # load the dataset
-    DATAFRAME = pd.read_csv(INPUT_FOLDER+FILE_NAME+".csv", usecols=[1], 
-                            engine='python', skipfooter=3)
+    DATAFRAME = pd.read_csv(INPUT_FOLDER + FILE_NAME + ".csv", usecols=[1], engine='python', skipfooter=3)
     DATASET = DATAFRAME.values
     DATASET = DATASET.astype('float32')
     # normalize the dataset
