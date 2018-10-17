@@ -1,127 +1,113 @@
-# Project
+%%writefile lstm.py
+import math
 import numpy
 import matplotlib.pyplot as plt
 import pandas as pd
-import math
-import tensorflow as tf
-import keras
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_squared_error
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import mean_squared_error
-from sklearn.metrics import r2_score
-from sklearn import datasets, linear_model
-
+'''
+LSTM model to predict taxi ridership demand
+'''
 # convert an array of values into a dataset matrix
-def create_dataset(dataset, look_back=1, look_forward= 5):
-    dataX, dataY = [], []
-    for i in range(len(dataset)-look_back-1):
-        a = dataset[i:(i+look_back), 0]
-        dataX.append(a)
-        dataY.append(dataset[i + look_back:i+look_back+look_forward, 0])
-    return numpy.array(dataX), numpy.array(dataY)
+def create_dataset(DATASET, LOOK_BACK=1, LOOK_FORWARD=5):
+    DATA_X, DATA_Y = [], []
+    for i in range(len(DATASET)- LOOK_BACK- 1):
+        NEW = DATASET[i:(i+ LOOK_BACK), 0]
+        DATA_X.append(NEW)
+        DATA_Y.append(DATASET[i + LOOK_BACK:i+ LOOK_BACK+ LOOK_FORWARD, 0])
+    return numpy.array(DATA_X), numpy.array(DATA_Y)
 
-def create_dataFrame(X,Y,Predict):
-    new = pd.concat([pd.DataFrame(Predict,columns = ["Predict"]),pd.DataFrame(Y,columns =["Y"])],axis=1)
-    new = new[["Y","Predict"]]
-    return new
+def create_dataFrame(X, Y, PREDICT):
+    NEW = pd.concat([pd.DataFrame(PREDICT, columns=["Predict"]), pd.DataFrame(Y, 
+                                                                              columns=["Y"])], axis=1)
+    NEW = NEW[["Y", "Predict"]]
+    return NEW
 
-def create_final_output_test_and_train(INPUT_FOLDER,file_name,trainX,trainY,trainPredict,testX,testY,testPredict):
-    res = create_dataFrame(testX,testY,testPredict)
-    res_new = pd.DataFrame([scaler.inverse_transform(res[k]) for k in res.columns]).T
-    res_new.columns =res.columns
-    res.columns = [k + "_normalized" for k in res.columns]
-    test_final = pd.concat([res,res_new],axis=1)
-    test_final.to_csv(INPUT_FOLDER + file_name+"_test_result_final.csv", index=None)
+def create_final_output(INPUT_FOLDER, FILE_NAME, TRAIN_X, TRAIN_Y, 
+                                       TRAIN_PREDICT, TEST_X, TEST_Y, TEST_PREDICT):
+    RES = create_dataFrame(TEST_X, TEST_Y, TEST_PREDICT)
+    RES_NEW = pd.DataFrame([scaler.inverse_transform(RES[k]) for k in RES.columns]).T
+    RES_NEW.columns = RES.columns
+    RES.columns = [k + "_normalized" for k in RES.columns]
+    TEST_FINAL = pd.concat([RES, RES_NEW], axis=1)
+    TEST_FINAL.to_csv(INPUT_FOLDER + FILE_NAME+ "_test_result_final.csv", index=None)
 
-    res_train = create_dataFrame(trainX,trainY,trainPredict)
-    res_train_new = pd.DataFrame([scaler.inverse_transform(res_train[k]) for k in res_train.columns]).T
-    res_train_new.columns =res_train.columns
-    res_train.columns = [k + "_normalized" for k in res_train.columns]
-    train_final = pd.concat([res_train,res_train_new],axis=1)
-    train_final.to_csv(INPUT_FOLDER + file_name+"_train_result_final.csv", index =None)
-    return train_final,test_final
+    RES_TRAIN = create_dataFrame(TRAIN_X, TRAIN_Y, TRAIN_PREDICT)
+    RES_TRAIN_NEW = pd.DataFrame([scaler.inverse_transform(RES_TRAIN[k]) 
+                                  for k in RES_TRAIN.columns]).T
+    RES_TRAIN_NEW.columns = RES_TRAIN.columns
+    RES_TRAIN.columns = [k + "_normalized" for k in RES_TRAIN.columns]
+    TRAIN_FINAL = pd.concat([RES_TRAIN, RES_TRAIN_NEW], axis=1)
+    TRAIN_FINAL.to_csv(INPUT_FOLDER + FILE_NAME+"_train_result_final.csv", index=None)
+    return TRAIN_FINAL, TEST_FINAL
 
-
-if __name__=="__main__":
+if __name__ == "__main__":
     
-    INPUT_FOLDER="../data/entire data/LSTM/"
-    file_name="pc3_2016_1_3_total"
+    INPUT_FOLDER = "../data/entire data/LSTM/"
+    FILE_NAME = "pc3_2016_1_3_total"
     # fix random seed for reproducibility
     numpy.random.seed(7)
-    
     # load the dataset
-    dataframe = pd.read_csv(INPUT_FOLDER+file_name+".csv", usecols=[1], engine='python', skipfooter=3)
-    dataset = dataframe.values
-    dataset = dataset.astype('float32')
-    
+    DATAFRAME = pd.read_csv(INPUT_FOLDER+FILE_NAME+".csv", usecols=[1], 
+                            engine='python', skipfooter=3)
+    DATASET = DATAFRAME.values
+    DATASET = DATASET.astype('float32')
     # normalize the dataset
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    dataset = scaler.fit_transform(dataset)
-    
+    SCALAR = MinMaxScaler(feature_range=(0, 1))
+    DATASET = SCALAR.fit_transform(DATASET)
     # split into train and test sets
-    train_size = int(len(dataset) * 0.67)
-    test_size = len(dataset) - train_size
-    train, test = dataset[0:train_size,:], dataset[train_size:len(dataset),:]
-    print(len(train), len(test))    
-    
+    TRAIN_SIZE = int(len(DATASET) * 0.67)
+    TEST_SIZE = len(DATASET) - TRAIN_SIZE
+    TRAIN, TEST = DATASET[0:TRAIN_SIZE, :], DATASET[TRAIN_SIZE:len(DATASET), :]
+    print(len(TRAIN), len(TEST))    
     # reshape into X=t and Y=t+1
-    look_back = 24
-    look_forward = 12
-    trainX, trainY = create_dataset(train, look_back, look_forward)
-    testX, testY = create_dataset(test, look_back, look_forward)
-    
+    LOOK_BACK = 24
+    LOOK_FORWARD = 12
+    TRAIN_X, TRAIN_Y = create_dataset(TRAIN, LOOK_BACK, LOOK_FORWARD)
+    TEST_X, TEST_Y = create_dataset(TEST, LOOK_BACK, LOOK_FORWARD)
     # reshape input to be [samples, time steps, features]
-    trainX = numpy.reshape(trainX, (trainX.shape[0], 1, trainX.shape[1]))
-    testX = numpy.reshape(testX, (testX.shape[0], 1, testX.shape[1]))
-    
+    TRAIN_X = numpy.reshape(TRAIN_X, (TRAIN_X.shape[0], 1, TRAIN_X.shape[1]))
+    TEST_X = numpy.reshape(TEST_X, (TEST_X.shape[0], 1, TEST_X.shape[1]))
     # create and fit the LSTM network
-    model = Sequential()
-    model.add(LSTM(4, input_shape=(1, look_back)))
-    model.add(Dense(1))
-    model.compile(loss='mean_squared_error', optimizer='adam')
-    model.fit(trainX, trainY, epochs=4, batch_size=1, verbose=2)
-    
+    MODEL = Sequential()
+    MODEL.add(LSTM(4, input_shape=(1, LOOK_BACK)))
+    MODEL.add(Dense(1))
+    MODEL.compile(loss = 'mean_squared_error', optimizer = 'adam')
+    MODEL.fit(TRAIN_X, TRAIN_Y, epochs=4, batch_size=1, verbose=2)
     # make predictions
-    trainPredict = model.predict(trainX)
-    testPredict = model.predict(testX)  
-        
-    train_final,test_final = create_final_output_test_and_train(INPUT_FOLDER,file_name,trainX,trainY,
-                                                                trainPredict,testX,testY,testPredict)    
-
+    TRAIN_PREDICT = MODEL.predict(TRAIN_X)
+    TEST_PREDICT = MODEL.predict(TEST_X)  
+    TRAIN_FINAL, TEST_FINAL = create_final_output(INPUT_FOLDER, FILE_NAME, TRAIN_X, TRAIN_Y,
+                                                TRAIN_PREDICT, TEST_X, TEST_Y, TEST_PREDICT)    
     # invert predictions
-    trainPredict = scaler.inverse_transform(trainPredict)
-    trainY = scaler.inverse_transform([trainY])
-    testPredict = scaler.inverse_transform(testPredict)
-    testY = scaler.inverse_transform([testY])
-    numpy.savetxt(INPUT_FOLDER+file_name+"_train_predict.csv",trainPredict)
-    numpy.savetxt(INPUT_FOLDER+file_name+"_test_predict.csv",testPredict)
-    numpy.savetxt(INPUT_FOLDER+file_name+"_train_Y.csv",trainY)
-    numpy.savetxt(INPUT_FOLDER+file_name+"_test_Y.csv",testY)
-    
-    
+    TRAIN_PREDICT = SCALAR.inverse_transform(TRAIN_PREDICT)
+    TRAIN_Y = SCALAR.inverse_transform([TRAIN_Y])
+    TEST_PREDICT = SCALAR.inverse_transform(TEST_PREDICT)
+    TEST_Y = SCALAR.inverse_transform([TEST_Y])
+    numpy.savetxt(INPUT_FOLDER+ FILE_NAME+ "_train_predict.csv", TRAIN_PREDICT)
+    numpy.savetxt(INPUT_FOLDER+ FILE_NAME+ "_test_predict.csv", TEST_PREDICT)
+    numpy.savetxt(INPUT_FOLDER+ FILE_NAME+ "_train_Y.csv", TRAIN_Y)
+    numpy.savetxt(INPUT_FOLDER+ FILE_NAME+ "_test_Y.csv", TEST_Y)
     # calculate root mean squared error
-    trainScore = math.sqrt(mean_squared_error(trainY[0], trainPredict[:,0]))
-    print('Train Score: %.2f RMSE' % (trainScore))
-    testScore = math.sqrt(mean_squared_error(testY[0], testPredict[:,0]))
-    print('Test Score: %.2f RMSE' % (testScore))
-    
+    TRAIN_SCORE = math.sqrt(mean_squared_error(TRAIN_Y[0], TRAIN_PREDICT[:, 0]))
+    print('Train Score: %.2f RMSE' % (TRAIN_SCORE))
+    TEST_SCORE = math.sqrt(mean_squared_error(TEST_Y[0], TEST_PREDICT[:, 0]))
+    print('Test Score: %.2f RMSE' % (TEST_SCORE))
     # shift train predictions for plotting
-    trainPredictPlot = numpy.empty_like(dataset)
-    trainPredictPlot[:, :] = numpy.nan
-    trainPredictPlot[look_back:len(trainPredict)+look_back, :] = trainPredict
-
+    TRAIN_PPREDICT_PLOT = numpy.empty_like(DATASET)
+    TRAIN_PPREDICT_PLOT[:, :] = numpy.nan
+    TRAIN_PPREDICT_PLOT[LOOK_BACK:len(TRAIN_PREDICT)+ LOOK_BACK, :] = TRAIN_PREDICT
     # shift test predictions for plotting
-    testPredictPlot = numpy.empty_like(dataset)
-    testPredictPlot[:, :] = numpy.nan
-    testPredictPlot[len(trainPredict)+(look_back*2)+1:len(dataset)-1, :] = testPredict
-
+    TEST_PPREDICT_PLOT = numpy.empty_like(DATASET)
+    TEST_PPREDICT_PLOT[:, :] = numpy.nan
+    TEST_PPREDICT_PLOT[len(TRAIN_PREDICT)+ (LOOK_BACK*2)+ 1:len(DATASET)-1, :] = TEST_PREDICT
     # plot baseline and predictions
-    plt.suptitle(file_name, fontsize=12)
-    plt.plot(scaler.inverse_transform(dataset), label="observed")
-    plt.plot(trainPredictPlot, label="train_predict")
-    plt.plot(testPredictPlot, label="test_predict")
+    plt.suptitle(FILE_NAME, fontsize=12)
+    plt.plot(SCALAR.inverse_transform(DATASET), label="Observed")
+    plt.plot(TRAIN_PPREDICT_PLOT, label="Train_predict")
+    plt.plot(TEST_PPREDICT_PLOT, label="Test_predict")
     plt.legend()
     plt.show()
-    
